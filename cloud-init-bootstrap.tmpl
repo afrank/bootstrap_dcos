@@ -1,0 +1,70 @@
+#cloud-config
+
+hostname: %(hostname)s
+write_files:
+  - path: /var/tmp/config.yaml
+    permissions: 0644
+    owner: root
+    content: |
+      ---
+      bootstrap_url: file:///opt/dcos_install_tmp
+      ssh_user: core
+      cluster_name: DCOS
+      exhibitor_storage_backend: static
+      master_discovery: static
+      process_timeout: 10000
+      master_list:
+%(master_list)s
+      agent_list:
+%(agent_list)s
+      resolvers:
+      - 8.8.8.8
+      - 8.8.4.4
+      ssh_port: 22
+  - path: /var/tmp/ip-detect
+    permissions: 0755
+    owner: root
+    content: |
+      #!/usr/bin/env bash
+      set -o nounset -o errexit
+      export PATH="/usr/sbin:/usr/bin:${PATH}"
+      echo $(ip route get 8.8.8.8 | awk '/8.8.8.8/ {print $NF}')
+  - path: /root/ssh_key
+    permissions: 0600
+    owner: root
+    content: |
+      -----BEGIN DSA PRIVATE KEY-----
+      MIIBvQIBAAKBgQCQk5UU0QgYBhHaQPColJMYeTytiG1ykdQnb3wN6DFiPqjTAyjX
+      j8BD5B4Eq2qUxZiEj3tM2q4RsvjC/1miALrstU/nvM6cmvfAZ/DbQZ/KUCXaD64J
+      FS3jAlZy3Havrq8Uh5NyanoW6E/lRx5QvdRV9BZZX+H3it3EBRHgFgG+JwIVALk6
+      w4qB4Ka02ByeHcgpw30Pi8d/AoGBAIVUvFWKyhySFX3mtJyBosvfpBLqqLic6ONQ
+      wiYhmOcQNL+lItqYK74nq9er6+5VAvrcYxxs0/b1GzanBnzDEtrmchpZzznez4Vd
+      k0QhMcKBGr5s1plGMIpwW5g8Tz8bMPD8vgmPMaYLhXpPaFBkGdvogbqwZxwaadvr
+      V2GuNN+oAoGBAIK71WI5+j2+w1ya+uhA+eKQLnDJ+ohhoxN+Jdrfv9ZunKnK4B2E
+      y4xMjFqk/Q08Bct8KZOvWIWv0exLJPyRCMPGjXjtO1Ctog86dcaZrePAmUqOnItu
+      BSDKdAFCkrnKz9X+fxkmgDvk6dS9LfpMeuy5qgQeOuMcoM6rNZihr9XRAhUAqjxq
+      fbuC7lEv03Vvkf0hNLP5MMw=
+      -----END DSA PRIVATE KEY-----
+coreos:
+  units:
+    - name: "docker.service"
+      enable: true
+      drop-ins:
+        - name: "10-docker_opts.conf"
+          content: |
+            [Service]
+            Environment="DOCKER_OPTS=--dns=4.2.2.2 -H 0.0.0.0:2375"
+    - name: "runcmd.service"
+      command: start
+      content: |
+        [Unit]
+        Description=Run DC/OS Installer
+
+        [Service]
+        Type=oneshot
+        ExecStart=/bin/sh -c "cd /var/tmp; mkdir genconf; wget https://downloads.dcos.io/dcos/EarlyAccess/dcos_generate_config.sh; cp /root/ssh_key /var/tmp/ip-detect /var/tmp/config.yaml genconf/; bash dcos_generate_config.sh --genconf --cli-telemetry-disabled; bash dcos_generate_config.sh --install-prereqs --cli-telemetry-disabled; bash dcos_generate_config.sh --preflight --cli-telemetry-disabled; bash dcos_generate_config.sh --deploy --cli-telemetry-disabled; bash dcos_generate_config.sh --postflight --cli-telemetry-disabled"
+users:
+  - name: core
+    passwd: $1$OeKm0UWT$FknlsccayDNyhosaRTFV.1
+    ssh-authorized-keys:
+      - "ssh-dss AAAAB3NzaC1kc3MAAACBAJCTlRTRCBgGEdpA8KiUkxh5PK2IbXKR1CdvfA3oMWI+qNMDKNePwEPkHgSrapTFmISPe0zarhGy+ML/WaIAuuy1T+e8zpya98Bn8NtBn8pQJdoPrgkVLeMCVnLcdq+urxSHk3JqehboT+VHHlC91FX0Fllf4feK3cQFEeAWAb4nAAAAFQC5OsOKgeCmtNgcnh3IKcN9D4vHfwAAAIEAhVS8VYrKHJIVfea0nIGiy9+kEuqouJzo41DCJiGY5xA0v6Ui2pgrvier16vr7lUC+txjHGzT9vUbNqcGfMMS2uZyGlnPOd7PhV2TRCExwoEavmzWmUYwinBbmDxPPxsw8Py+CY8xpguFek9oUGQZ2+iBurBnHBpp2+tXYa4036gAAACBAIK71WI5+j2+w1ya+uhA+eKQLnDJ+ohhoxN+Jdrfv9ZunKnK4B2Ey4xMjFqk/Q08Bct8KZOvWIWv0exLJPyRCMPGjXjtO1Ctog86dcaZrePAmUqOnItuBSDKdAFCkrnKz9X+fxkmgDvk6dS9LfpMeuy5qgQeOuMcoM6rNZihr9XR"

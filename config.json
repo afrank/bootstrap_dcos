@@ -1,0 +1,40 @@
+{
+    "master": {
+        "COUNT": 5,
+        "INSTANCE_TYPE": "t2.medium",
+        "VOL_SIZE": 5,
+        "AMI_ID": "ami-9327e9fe",
+        "CLOUD_INIT_TMPL": "./cloud-init-generic.tmpl"
+    },
+    "agent": {
+        "COUNT": 5,
+        "INSTANCE_TYPE": "m3.xlarge",
+        "VOL_SIZE": 5,
+        "AMI_ID": "ami-9327e9fe",
+        "CLOUD_INIT_TMPL": "./cloud-init-generic.tmpl"
+    },
+    "bootstrap": {
+        "COUNT": 1,
+        "INSTANCE_TYPE": "t2.small",
+        "VOL_SIZE": 5,
+        "AMI_ID": "ami-9327e9fe",
+        "CLOUD_INIT_TMPL": "./cloud-init-bootstrap.tmpl"
+    },
+    "common": {
+        "REGION": "us-east-1",
+        "HOSTNAME_TMPL": "dcos-%(role)s-%(num)s-%(env)s",
+        "ENV": "afrank",
+        "KEY_NAME": "",
+        "AWS_ACCESS_KEY_ID": "",
+        "AWS_SECRET_ACCESS_KEY": "",
+        "SECURITY_GROUPS": [""],
+        "ZONES": {
+            "us-east-1a": { "subnet": "" },
+            "us-east-1b": { "subnet": "" },
+            "us-east-1c": { "subnet": "" },
+            "us-east-1d": { "subnet": "" },
+            "us-east-1e": { "subnet": "" }
+        }
+    }
+}
+

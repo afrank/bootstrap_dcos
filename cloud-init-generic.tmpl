@@ -1,0 +1,33 @@
+#cloud-config
+
+hostname: %(hostname)s
+write_files:
+  - path: /var/lib/dcos/mesos-slave-common
+    permissions: 0644
+    owner: root
+    content: |
+      MESOS_ATTRIBUTES=zone:%(zone)s
+coreos:
+  etcd2:
+    discovery: "%(etcd_discovery_url)s"
+    advertise-client-urls: "http://$private_ipv4:2379"
+    initial-advertise-peer-urls: "http://$private_ipv4:2380"
+    listen-client-urls: "http://0.0.0.0:2379,http://0.0.0.0:4001"
+    listen-peer-urls: "http://$private_ipv4:2380,http://$private_ipv4:7001"
+  units:
+    - name: etcd2.service
+      command: start
+    - name: fleet.service
+      command: start
+    - name: "docker.service"
+      enable: true
+      drop-ins:
+        - name: "10-docker_opts.conf"
+          content: |
+            [Service]
+            Environment="DOCKER_OPTS=--dns=4.2.2.2 -H 0.0.0.0:2375"
+users:
+  - name: core
+    passwd: $1$OeKm0UWT$FknlsccayDNyhosaRTFV.1
+    ssh-authorized-keys:
+      - "ssh-dss AAAAB3NzaC1kc3MAAACBAJCTlRTRCBgGEdpA8KiUkxh5PK2IbXKR1CdvfA3oMWI+qNMDKNePwEPkHgSrapTFmISPe0zarhGy+ML/WaIAuuy1T+e8zpya98Bn8NtBn8pQJdoPrgkVLeMCVnLcdq+urxSHk3JqehboT+VHHlC91FX0Fllf4feK3cQFEeAWAb4nAAAAFQC5OsOKgeCmtNgcnh3IKcN9D4vHfwAAAIEAhVS8VYrKHJIVfea0nIGiy9+kEuqouJzo41DCJiGY5xA0v6Ui2pgrvier16vr7lUC+txjHGzT9vUbNqcGfMMS2uZyGlnPOd7PhV2TRCExwoEavmzWmUYwinBbmDxPPxsw8Py+CY8xpguFek9oUGQZ2+iBurBnHBpp2+tXYa4036gAAACBAIK71WI5+j2+w1ya+uhA+eKQLnDJ+ohhoxN+Jdrfv9ZunKnK4B2Ey4xMjFqk/Q08Bct8KZOvWIWv0exLJPyRCMPGjXjtO1Ctog86dcaZrePAmUqOnItuBSDKdAFCkrnKz9X+fxkmgDvk6dS9LfpMeuy5qgQeOuMcoM6rNZihr9XR"
